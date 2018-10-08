@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewPort" content=" width=device-width" initial-scale="1.0" user-scalable="no">
+    <title>Vue仿通讯录</title>
+    <script type="text/javascript" src="Vue/vue.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+        <div id="app">
+            <my-header header-title="通讯录">
+                <button @touchstart="backBtn" slot="left">返回</button>
+                <button @touchstart="homeBtn" slot="right">主页</button>
+            </my-header>
+            <user :user-data="userData" ref="listHeight"></user>
+            <alert-container alert-title="呼叫">
+                <button  @touchstart="ok" slot="ok">确定</button>
+                <button  @touchstart="no" slot="no">取消</button>
+            </alert-container>
+        </div>
+
+    <script>
+        var userData=[
+            {"index":'A',"users":[
+                    {"name":'a1',"tel":"15177866110"},
+                    {"name":'a1',"tel":"15177866111"},
+                    {"name":'a1',"tel":"15177866112"}
+                    ]
+            },
+            {"index":'B',"users":[
+                    {"name":'b1',"tel":"15177866113"},
+                    {"name":'b1',"tel":"15177866114"},
+                    {"name":'b1',"tel":"15177866115"}
+                    ]
+            },
+            {"index":'C',"users":[
+                    {"name":'c1',"tel":"15177866116"},
+                    {"name":'c1',"tel":"15177866117"},
+                    {"name":'c1',"tel":"15177866118"}
+                    ]
+            },
+            {"index":'D',"users":[
+                    {"name":'d1',"tel":"15177866119"},
+                    {"name":'d1',"tel":"15177866121"},
+                    {"name":'d1',"tel":"15177866122"}
+                    ]
+            },
+            {"index":'E',"users":[
+                    {"name":'e1',"tel":"15177866123"},
+                    {"name":'e1',"tel":"15177866124"},
+                    {"name":'e1',"tel":"15177866125"}
+                    ]
+            },
+            {"index":'F',"users":[
+                    {"name":'f1',"tel":"1517786612a"},
+                    {"name":'f1',"tel":"1517786612b"},
+                    {"name":'f1',"tel":"1517786612c"}
+                ]
+            },
+            {"index":'G',"users":[
+                    {"name":'g1',"tel":"1517786612d"},
+                    {"name":'g1',"tel":"1517786612e"},
+                    {"name":'g1',"tel":"1517786612f"}
+                ]
+            } ,
+            {"index":'H',"users":[
+                    {"name":'h1',"tel":"1517786612g"},
+                    {"name":'h1',"tel":"1517786612h"},
+                    {"name":'h1',"tel":"1517786612i"}
+                ]
+            } ,
+            {"index":'I',"users":[
+                    {"name":'i1',"tel":"1517786612j"},
+                    {"name":'i1',"tel":"1517786612k"},
+                    {"name":'i1',"tel":"1517786612q"}
+                ]
+            } ,
+            {"index":'J',"users":[
+                    {"name":'j1',"tel":"1517786612m"},
+                    {"name":'j1',"tel":"1517786612n"},
+                    {"name":'j1',"tel":"1517786612p"}
+                ]
+            }
+        ];
+
+        var bus=new Vue(); //创建bus 空实例用来实现非父子通信
+
+
+        Vue.component('my-header',{  //头部组件
+            template:`<div id="header">
+                 <slot name="left"></slot>
+                   {{headerTitle}}
+                 <slot name="right"></slot>
+                    </div>`,
+            props : {
+              'headerTitle' : {
+                  type:String,
+                  default :'标题'
+              }
+            }
+        });
+
+        Vue.component('user',{ //列表组件
+            // 设置滑动事件,因为触摸与滑动的触摸冲突
+            template:`<div id="user" >
+                <ul id="user_list" ref="userList" @touchmove="bMove=true">
+                <li v-for ="item in userData">
+                    <p>{{item.index}}</p>
+                    <ul>
+                        <li @touchend="showTel(user.tel)" v-for="user in item.users"> {{user.name}}</li>
+                    </ul>
+                </li>
+                </ul>
+                <ul id="user_search" ref="usHeight">
+                    <li @touchstart="setScroll" v-for="item in userData">{{item.index}}</li>
+                </ul>
+            </div>`,
+            props:{
+                'user-data':{
+                    type:Array,
+                    default:function () {
+                        return [];
+                    }
+                }
+            },
+            data:function () {
+                return{
+                    bMove:false
+                }
+            },
+            methods:{
+                setUsHeight:function () {
+                    var usH=this.$refs.usHeight.offsetHeight;
+                    this.$refs.usHeight.style.marginTop=(-usH/2)+'px'; //设置右边搜索List的位置
+                },
+                setScroll:function (ev) {
+                   var userP= this.$refs.userList.getElementsByTagName('p');  //通过触摸事件获取点击位置，遍历 p标签里面的index，
+                    for (i=0;i<userP.length;i++){
+                       if (userP[i].innerHTML==  ev.target.innerHTML){
+                           document.body.scrollTop=userP[i].offsetTop;   // 如果点击位置与遍历的index 相同，则将获取的点击节点top 赋值给滚动条，
+                          // alert(userP[i].offsetTop)
+                           document.documentElement.scrollTop=userP[i].offsetTop;
+                        }
+                    }
+                },
+                showTel:function (tel) {
+                    if (!this.bMove){ //不滑动时
+                        bus.$emit('message',tel);
+                    }else{ //滑动时
+                        this.bMove=false;
+                    }
+                    }
+            },
+            mounted:function () {
+                this.setUsHeight();
+            }
+        });
+
+        Vue.component('alert-container',{ // 弹窗组件
+            template:` <div id="alert-container" ref="alert">
+                            <div id="alert-content">
+                             <div id="alert-title">{{alertTitle}}</div>
+                                <div id="alert-body">{{telNumber}}</div>
+                                <div id="alert-btn">
+                               <slot name="ok"></slot>
+                               <slot name="no"></slot>
+                               </div>
+                         </div>
+            </div>`,
+            props:{
+                'alertTitle':{
+                    type:String,
+                    default:'弹窗'
+                }
+            },
+
+            data:function () {
+              return{
+                  telNumber:''
+              }
+            },
+            mounted:function (telNumber) {
+                var _this=this;
+                bus.$on("message",function (telNumber) {
+                    _this.telNumber=telNumber;
+                    _this.$refs.alert.style.display='flex';
+                });
+
+            }
+        })
+        var vm=new Vue({
+            el:'#app',
+            data:{
+              userData:userData
+            },
+           methods : {
+               backBtn:function () {
+                   alert('返回');
+               },
+               homeBtn:function () {
+                   alert('主页');
+               },
+               ok:function () {
+                   alert("呼叫确定")
+               },
+               no:function () {
+                this.$children[2].$refs.alert.style.display='none'; //children[2] 对应第三个组件，才能获取到相应的ref
+               }
+           }
+        })
+    </script>
+</body>
+</html>
